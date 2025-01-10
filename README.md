@@ -14,8 +14,8 @@ Currently this repository supports building the following libraries:
 | ------------ | ---------- |
 | ai           | :x: |
 | am           | :x: |
-| amcnotstub   | :x: |
-| amcstubs     | :x: |
+| amcnotstub   | :heavy_check_mark: |
+| amcstubs     | :heavy_check_mark: |
 | ar           | :x: |
 | ax           | :x: |
 | axart        | :x: |

@@ -2,6 +2,8 @@
 #              Dolphin SDK 2001 (12-17-2001) Libraries Makefile              #
 ##############################################################################
 
+include util.mk
+
 ifneq (,$(findstring Windows,$(OS)))
   EXE := .exe
 else
@@ -92,8 +94,14 @@ DEP_FILES := $(O_FILES:.o=.d) $(DECOMP_C_OBJS:.o=.asmproc.d)
 ##################### Compiler Options #######################
 findcmd = $(shell type $(1) >/dev/null 2>/dev/null; echo $$?)
 
-# todo, please, better CROSS than this.
-CROSS := powerpc64-linux-gnu-
+# detect prefix for PowerPC toolchain
+ifneq      ($(call find-command,powerpc-linux-gnu-ld),)
+  CROSS := powerpc-linux-gnu-
+else ifneq ($(call find-command,powerpc-eabi-ld),)
+  CROSS := powerpc-eabi-
+else
+  $(error Unable to detect a suitable PowerPC toolchain installed. Please install/configure one!)
+endif
 
 COMPILER_VERSION ?= 1.2.5
 
@@ -136,7 +144,7 @@ TARGET_LIBS_DEBUG := $(addprefix baserom/,$(addsuffix .a,$(TARGET_LIBS_DEBUG)))
 
 default: all
 
-all: $(DTK)
+all: $(DTK) amcnotstub.a amcnotstubD.a amcstubs.a amcstubsD.a
 
 verify: build/release/test.bin build/debug/test.bin build/verify.sha1
 	@sha1sum -c build/verify.sha1
@@ -189,6 +197,14 @@ build/release/src/%.o: src/%.c
 	$(QUIET)$(CC) -c -O4,p -inline auto -sym on $(CFLAGS) -I- $(INCLUDES) -DRELEASE $< -o $@
 
 ################################ Build AR Files ###############################
+
+amcnotstub_c_files := $(wildcard src/amcnotstub/*.c)
+amcnotstub.a  : $(addprefix $(BUILD_DIR)/release/,$(amcnotstub_c_files:.c=.o))
+amcnotstubD.a : $(addprefix $(BUILD_DIR)/debug/,$(amcnotstub_c_files:.c=.o))
+
+amcstubs_c_files := $(wildcard src/amcstubs/*.c)
+amcstubs.a  : $(addprefix $(BUILD_DIR)/release/,$(amcstubs_c_files:.c=.o))
+amcstubsD.a : $(addprefix $(BUILD_DIR)/debug/,$(amcstubs_c_files:.c=.o))
 
 build/release/baserom.elf: build/release/src/stub.o $(foreach l,$(VERIFY_LIBS),baserom/$(l).a)
 build/release/test.elf:    build/release/src/stub.o $(foreach l,$(VERIFY_LIBS),$(l).a)
