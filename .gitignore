@@ -15,5 +15,11 @@ mwcc_compiler/*
 # Original files
 baserom/*
 
+# Windows NUL file
+NUL
+
+# vscode
+.vscode/
+
 # Keep .gitkeep
 !**/.gitkeep
