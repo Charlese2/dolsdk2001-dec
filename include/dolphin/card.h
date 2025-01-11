@@ -82,6 +82,9 @@ typedef struct CARDControl
     CARDCallback eraseCallback;
     CARDCallback unlockCallback;
     OSAlarm alarm;
+    // added in Dec-17-2001 revision
+    /*0x108*/ u32 cid;
+    /*0x10C*/DVDDiskID* diskID;
 } CARDControl;
 
 typedef struct CARDDecParam {
@@ -120,6 +123,9 @@ typedef struct CARDID {
 #define CARD_ATTR_NO_MOVE 0x10u
 #define CARD_ATTR_GLOBAL  0x20u
 #define CARD_ATTR_COMPANY 0x40u
+
+#define CARD_ENCODE_ANSI 0
+#define CARD_ENCODE_SJIS 1
 
 #define CARD_FAT_AVAIL 0x0000u
 #define CARD_FAT_CHECKSUM 0x0000u
@@ -184,6 +190,10 @@ typedef struct CARDID {
 #define CARD_STAT_BANNER_RGB5A3 2
 #define CARD_STAT_BANNER_MASK 3
 
+#define CARD_CHAN0 0
+#define CARD_CHAN1 1
+#define CARD_CHAN_MAX 2
+
 #define CARDGetBannerFormat(stat) (((stat)->bannerFormat) & CARD_STAT_BANNER_MASK)
 #define CARDGetIconFormat(stat, n) (((stat)->iconFormat >> (2 * (n))) & CARD_STAT_ICON_MASK)
 #define CARDGetDirCheck(dir) ((CARDDirCheck *)&(dir)[CARD_MAX_FILE])
@@ -193,6 +203,10 @@ s32 CARDGetResultCode(s32 chan);
 s32 CARDCheckAsync(s32 chan, CARDCallback callback);
 s32 CARDFreeBlocks(s32 chan, s32 *byteNotUsed, s32 *filesNotUsed);
 s32 CARDRenameAsync(s32 chan, const char *oldName, const char *newName, CARDCallback callback);
+
+s32 CARDGetAttributes(s32 chan, s32 fileNo, u8* attr);
+s32 CARDSetAttributesAsync(s32 chan, s32 fileNo, u8 attr, CARDCallback callback);
+s32 CARDSetAttributes(s32 chan, s32 fileNo, u8 attr);
 
 #ifdef __cplusplus
 }

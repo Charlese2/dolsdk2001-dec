@@ -4,22 +4,50 @@
 
 include util.mk
 
-ifneq (,$(findstring Windows,$(OS)))
-  EXE := .exe
-else
-  WINE ?=
-endif
-
 # If 0, tells the console to chill out. (Quiets the make process.)
 VERBOSE ?= 0
 
-UNAME_S := $(shell uname -s)
-ifeq ($(UNAME_S),Linux)
-  HOST_OS := linux
-else ifeq ($(UNAME_S),Darwin)
-  HOST_OS := macos
+# Force correct find on Windows
+ifeq ($(OS),Windows_NT)
+
+# Attempt to locate MSYS or Git Bash find.exe
+FIND_CANDIDATES := C:/msys64/usr/bin/find.exe \
+                   C:/Program\ Files/Git/usr/bin/find.exe
+
+define FIND_MSYS
+  $(foreach c,$(FIND_CANDIDATES),\
+    $(if $(wildcard $(c)),$(c),))
+endef
+
+FOUND_MSYS_FIND := $(firstword $(FIND_MSYS))
+
+ifeq ($(FOUND_MSYS_FIND),)
+  $(warning Could not find an MSYS or Git Bash "find.exe". Falling back to Windows find.)
+  FIND := find
 else
-  $(error Unsupported host/building OS <$(UNAME_S)>)
+  FIND := "$(FOUND_MSYS_FIND)"
+endif
+
+else
+  # On non-Windows (Linux, macOS), just assume the normal find.
+  FIND := find
+endif
+
+
+# Host OS detection
+ifeq ($(OS),Windows_NT)
+  HOST_OS := windows
+  EXE := .exe
+else
+  WINE ?=
+  UNAME_S := $(shell uname -s)
+  ifeq ($(UNAME_S),Linux)
+    HOST_OS := linux
+  else ifeq ($(UNAME_S),Darwin)
+    HOST_OS := macos
+  else
+    $(error Unsupported host/building OS <$(UNAME_S)>)
+  endif
 endif
 
 BUILD_DIR := build
@@ -69,13 +97,14 @@ ifeq ($(VERBOSE),0)
   QUIET := @
 endif
 
-PYTHON := python3
+# Use python3 if available, otherwise fallback
+PYTHON ?= python3
 
 # Every file has a debug version. Append D to the list.
 TARGET_LIBS_DEBUG := $(addsuffix D,$(TARGET_LIBS))
 
 # TODO, decompile
-SRC_DIRS := $(shell find src -type d)
+SRC_DIRS := $(shell $(FIND) src -type d)
 
 ###################### Other Tools ######################
 
@@ -92,32 +121,49 @@ O_FILES := $(foreach file,$(C_FILES),$(BUILD_DIR)/$(file:.c=.c.o)) \
 DEP_FILES := $(O_FILES:.o=.d) $(DECOMP_C_OBJS:.o=.asmproc.d)
 
 ##################### Compiler Options #######################
-findcmd = $(shell type $(1) >/dev/null 2>/dev/null; echo $$?)
-
-# detect prefix for PowerPC toolchain
-ifneq      ($(call find-command,powerpc-linux-gnu-ld),)
-  CROSS := powerpc-linux-gnu-
-else ifneq ($(call find-command,powerpc-eabi-ld),)
-  CROSS := powerpc-eabi-
+# Use a helper to detect if a command is found, but handle Windows vs. Unix
+ifeq ($(HOST_OS),windows)
+  # In Windows (MSYS), "where" returns 0 if found, 1 if not found
+  find-command = $(shell where $(1) 1>NUL 2>NUL && echo 0 || echo 1)
 else
-  $(error Unable to detect a suitable PowerPC toolchain installed. Please install/configure one!)
+  # In Unix, "type" returns 0 if found, non-zero if not found
+  find-command = $(shell type $(1) >/dev/null 2>/dev/null; echo $$?)
 endif
 
-COMPILER_VERSION ?= 1.2.5
+# detect prefix for PowerPC toolchain
+ifneq ($(call find-command,powerpc-linux-gnu-ld),0)
+  ifneq ($(call find-command,powerpc-eabi-ld),0)
+    $(error Unable to detect a suitable PowerPC toolchain installed. Please install/configure one!)
+  else
+    CROSS := powerpc-eabi-
+  endif
+else
+  CROSS := powerpc-linux-gnu-
+endif
+
+COMPILER_VERSION ?= 1.2.5n
 
 COMPILER_DIR := mwcc_compiler/GC/$(COMPILER_VERSION)
 AS = $(CROSS)as
-MWCC    := $(WINE) $(COMPILER_DIR)/mwcceppc.exe
 AR = $(CROSS)ar
 LD = $(CROSS)ld
 OBJDUMP = $(CROSS)objdump
 OBJCOPY = $(CROSS)objcopy
+
+# On Windows, you can run the compiler natively.
+# If you still want to rely on Wine, you can keep it. If not, remove "$(WINE) ".
+MWCC    := $(WINE) $(COMPILER_DIR)/mwcceppc$(EXE)
+
 ifeq ($(HOST_OS),macos)
   CPP := clang -E -P -x c
+else ifeq ($(HOST_OS),windows)
+  # If using MSYS, we often have `cpp` installed. If you prefer clang, adjust:
+  CPP := cpp -P -x c
 else
   CPP := cpp
 endif
-DTK     := $(TOOLS_DIR)/dtk
+
+DTK     := $(TOOLS_DIR)/dtk$(EXE)
 DTK_VERSION := 0.7.4
 
 CC        = $(MWCC)
@@ -125,6 +171,12 @@ CC        = $(MWCC)
 ######################## Flags #############################
 
 CHARFLAGS := -char unsigned
+
+# why. Did some SDK libs (like CARD) prefer char signed over unsigned? TODO: Figure out consistency behind this.
+build/debug/src/card/CARDRename.o: CHARFLAGS := -char signed
+build/release/src/card/CARDRename.o: CHARFLAGS := -char signed
+build/debug/src/card/CARDOpen.o: CHARFLAGS := -char signed
+build/release/src/card/CARDOpen.o: CHARFLAGS := -char signed
 
 CFLAGS = $(CHARFLAGS) -nodefaults -proc gekko -fp hard -Cpp_exceptions off -enum int -warn pragmas -requireprotos -pragma 'cats off'
 INCLUDES := -Iinclude -Iinclude/libc -ir src
@@ -144,7 +196,7 @@ TARGET_LIBS_DEBUG := $(addprefix baserom/,$(addsuffix .a,$(TARGET_LIBS_DEBUG)))
 
 default: all
 
-all: $(DTK) amcnotstub.a amcnotstubD.a amcstubs.a amcstubsD.a
+all: $(DTK) amcnotstub.a amcnotstubD.a amcstubs.a amcstubsD.a card.a cardD.a
 
 verify: build/release/test.bin build/debug/test.bin build/verify.sha1
 	@sha1sum -c build/verify.sha1
@@ -154,13 +206,13 @@ extract: $(DTK)
 	@$(DTK) ar extract $(TARGET_LIBS) --out baserom/release/src
 	@$(DTK) ar extract $(TARGET_LIBS_DEBUG) --out baserom/debug/src
     # Thank you GPT, very cool. Temporary hack to remove D off of inner src folders to let objdiff work.
-	@for dir in $$(find baserom/debug/src -type d -name 'src'); do \
-		find "$$dir" -mindepth 1 -maxdepth 1 -type d | while read subdir; do \
+	@for dir in $$($(FIND) baserom/debug/src -type d -name 'src'); do \
+		$(FIND) "$$dir" -mindepth 1 -maxdepth 1 -type d | while read subdir; do \
 			mv "$$subdir" "$${subdir%?}"; \
 		done \
 	done
 	# Disassemble the objects and extract their dwarf info.
-	find baserom -name '*.o' | while read i; do \
+	$(FIND) baserom -name '*.o' | while read i; do \
 		$(DTK) elf disasm $$i $${i%.o}.s ; \
 		$(DTK) dwarf dump $$i -o $${i%.o}_DWARF.c ; \
 	done
@@ -205,6 +257,10 @@ amcnotstubD.a : $(addprefix $(BUILD_DIR)/debug/,$(amcnotstub_c_files:.c=.o))
 amcstubs_c_files := $(wildcard src/amcstubs/*.c)
 amcstubs.a  : $(addprefix $(BUILD_DIR)/release/,$(amcstubs_c_files:.c=.o))
 amcstubsD.a : $(addprefix $(BUILD_DIR)/debug/,$(amcstubs_c_files:.c=.o))
+
+card_c_files := $(wildcard src/card/*.c)
+card.a  : $(addprefix $(BUILD_DIR)/release/,$(card_c_files:.c=.o))
+cardD.a  : $(addprefix $(BUILD_DIR)/debug/,$(card_c_files:.c=.o))
 
 build/release/baserom.elf: build/release/src/stub.o $(foreach l,$(VERIFY_LIBS),baserom/$(l).a)
 build/release/test.elf:    build/release/src/stub.o $(foreach l,$(VERIFY_LIBS),$(l).a)
