@@ -198,7 +198,7 @@ TARGET_LIBS_DEBUG := $(addprefix baserom/,$(addsuffix .a,$(TARGET_LIBS_DEBUG)))
 
 default: all
 
-all: $(DTK) amcnotstub.a amcnotstubD.a amcstubs.a amcstubsD.a axart.a axartD.a card.a cardD.a exi.a exiD.a
+all: $(DTK) amcnotstub.a amcnotstubD.a amcstubs.a amcstubsD.a axart.a axartD.a card.a cardD.a exi.a exiD.a si.a siD.a
 
 verify: build/release/test.bin build/debug/test.bin build/verify.sha1
 	@sha1sum -c build/verify.sha1
@@ -271,6 +271,10 @@ cardD.a  : $(addprefix $(BUILD_DIR)/debug/,$(card_c_files:.c=.o))
 exi_c_files := $(wildcard src/exi/*.c)
 exi.a  : $(addprefix $(BUILD_DIR)/release/,$(exi_c_files:.c=.o))
 exiD.a  : $(addprefix $(BUILD_DIR)/debug/,$(exi_c_files:.c=.o))
+
+si_c_files := $(wildcard src/si/*.c)
+si.a  : $(addprefix $(BUILD_DIR)/release/,$(si_c_files:.c=.o))
+siD.a  : $(addprefix $(BUILD_DIR)/debug/,$(si_c_files:.c=.o))
 
 build/release/baserom.elf: build/release/src/stub.o $(foreach l,$(VERIFY_LIBS),baserom/$(l).a)
 build/release/test.elf:    build/release/src/stub.o $(foreach l,$(VERIFY_LIBS),$(l).a)
