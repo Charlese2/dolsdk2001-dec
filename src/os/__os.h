@@ -8,6 +8,7 @@ extern char * __OSExceptionNames[15]; // D ONLY
 
 unsigned long __OSIsDebuggerPresent(void);
 void __OSPSInit(void);
+unsigned long __OSGetDIConfig(void);
 
 // OSAlloc.c
 extern volatile int __OSCurrHeap;
@@ -102,5 +103,8 @@ __declspec(section ".init") extern void __init_data(void);
 long long __get_clock(void);
 unsigned long __get_time(void);
 int __to_gm_time(void);
+
+// EXIUart.c
+void __OSEnableBarnacle(s32 chan, u32 dev);
 
 #endif // _DOLPHIN_OS_INTERNAL_H_
