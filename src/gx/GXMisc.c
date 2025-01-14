@@ -15,13 +15,16 @@ void GXSetMisc(GXMiscToken token, u32 val)
 {
     switch (token) {
     case GX_MT_XF_FLUSH:
-        gx->vNum = val;
+        gx->vNum      = val;
+		gx->vNumNot   = !gx->vNum;
+		gx->bpSentNot = GX_TRUE;
+
         if (gx->vNum != 0) {
             gx->dirtyState |= 8;
         }
         break;
     case GX_MT_DL_SAVE_CONTEXT:
-        ASSERTMSGLINE(0xC4, !gx->inDispList, "GXSetMisc: Cannot change DL context setting while making a display list");
+        ASSERTMSGLINE(210, !gx->inDispList, "GXSetMisc: Cannot change DL context setting while making a display list");
         gx->dlSaveContext = (val > 0);
         break;
     case GX_MT_NULL:
@@ -38,13 +41,19 @@ void GXFlush(void)
 {
     u32 i;
 
-    CHECK_GXBEGIN(0xF0, "GXFlush");
+    CHECK_GXBEGIN(253, "GXFlush");
     if (gx->dirtyState) {
         __GXSetDirtyState();
     }
-    for (i = 32; i > 0; i--) {
-        GX_WRITE_U8(0);
-    }
+
+    GX_WRITE_U32(0);
+	GX_WRITE_U32(0);
+	GX_WRITE_U32(0);
+	GX_WRITE_U32(0);
+	GX_WRITE_U32(0);
+	GX_WRITE_U32(0);
+	GX_WRITE_U32(0);
+	GX_WRITE_U32(0);
     PPCSync();
 }
 
@@ -66,12 +75,16 @@ static inline void __GXAbortWait(u32 clocks)
     } while (time1 - time0 <= (clocks / 4));
 }
 
+void __GXAbort(void) {
+	__piReg[0x18 / 4] = 1;
+	__GXAbortWait(200);
+	__piReg[0x18 / 4] = 0;
+	__GXAbortWait(20);
+}
+
 void GXAbortFrame(void)
 {
-    __piReg[6] = 1;
-    __GXAbortWait(0xC8U);
-    __piReg[6] = 0;
-    __GXAbortWait(0x14U);
+    __GXAbort();
     __GXCleanGPFifo();
 }
 
@@ -80,17 +93,17 @@ void GXSetDrawSync(u16 token)
     BOOL enabled;
     u32 reg;
 
-    CHECK_GXBEGIN(0x162, "GXSetDrawSync");
+    CHECK_GXBEGIN(379, "GXSetDrawSync");
 
     enabled = OSDisableInterrupts();
     reg = token | 0x48000000;
     GX_WRITE_RAS_REG(reg);
-    SET_REG_FIELD(0x16F, reg, 16, 0, token);
-    SET_REG_FIELD(0x170, reg, 8, 24, 0x47);
+    SET_REG_FIELD(392, reg, 16, 0, token);
+    SET_REG_FIELD(393, reg, 8, 24, 0x47);
     GX_WRITE_RAS_REG(reg);
     GXFlush();
     OSRestoreInterrupts(enabled);
-    gx->bpSent = 1;
+    gx->bpSentNot = GX_FALSE;
 }
 
 u16 GXReadDrawSync(void)
@@ -104,7 +117,7 @@ void GXSetDrawDone(void)
     u32 reg;
     BOOL enabled;
 
-    CHECK_GXBEGIN(0x19C, "GXSetDrawDone");
+    CHECK_GXBEGIN(437, "GXSetDrawDone");
     enabled = OSDisableInterrupts();
     reg = 0x45000002;
     GX_WRITE_RAS_REG(reg);
@@ -117,7 +130,7 @@ void GXWaitDrawDone(void)
 {
     BOOL enabled;
 
-    CHECK_GXBEGIN(0x1CA, "GXWaitDrawDone");
+    CHECK_GXBEGIN(483, "GXWaitDrawDone");
 
     enabled = OSDisableInterrupts();
     while (!DrawDone) {
@@ -128,34 +141,34 @@ void GXWaitDrawDone(void)
 
 void GXDrawDone(void)
 {
-    CHECK_GXBEGIN(0x1EA, "GXDrawDone");
+    CHECK_GXBEGIN(515, "GXDrawDone");
     GXSetDrawDone();
     GXWaitDrawDone();
 }
 
 void GXPixModeSync(void)
 {
-    CHECK_GXBEGIN(0x20D, "GXPixModeSync");
+    CHECK_GXBEGIN(550, "GXPixModeSync");
     GX_WRITE_RAS_REG(gx->peCtrl);
-    gx->bpSent = 1;
+    gx->bpSentNot = GX_FALSE;
 }
 
 void GXTexModeSync(void)
 {
     u32 reg;
 
-    CHECK_GXBEGIN(0x225, "GXTexModeSync");
+    CHECK_GXBEGIN(574, "GXTexModeSync");
     reg = 0x63000000;
     GX_WRITE_RAS_REG(reg);
-    gx->bpSent = 1;
+    gx->bpSentNot = GX_FALSE;
 }
 
 #if DEBUG
 void __GXBypass(u32 reg)
 {
-    CHECK_GXBEGIN(0x23B, "__GXBypass");
+    CHECK_GXBEGIN(596, "__GXBypass");
     GX_WRITE_RAS_REG(reg);
-    gx->bpSent = 1;
+    gx->bpSentNot = GX_FALSE;
 }
 
 u16 __GXReadPEReg(u32 reg)
@@ -168,7 +181,7 @@ void GXPokeAlphaMode(GXCompare func, u8 threshold)
 {
     u32 reg;
 
-    CHECK_GXBEGIN(0x25F, "GXPokeAlphaMode");
+    // CHECK_GXBEGIN(0x25F, "GXPokeAlphaMode");
     reg = (func << 8) | threshold;
     __peReg[3] = reg;
 }
@@ -177,10 +190,10 @@ void GXPokeAlphaRead(GXAlphaReadMode mode)
 {
     u32 reg;
 
-    CHECK_GXBEGIN(0x26A, "GXPokeAlphaRead");
+    // CHECK_GXBEGIN(0x26A, "GXPokeAlphaRead");
     reg = 0;
-    SET_REG_FIELD(0x26D, reg, 2, 0, mode);
-    SET_REG_FIELD(0x26E, reg, 1, 2, 1);
+    SET_REG_FIELD(642, reg, 2, 0, mode);
+    SET_REG_FIELD(643, reg, 1, 2, 1);
     __peReg[4] = reg;
 }
 
@@ -188,9 +201,9 @@ void GXPokeAlphaUpdate(GXBool update_enable)
 {
     u32 reg;
 
-    CHECK_GXBEGIN(0x277, "GXPokeAlphaUpdate");
+    // CHECK_GXBEGIN(0x277, "GXPokeAlphaUpdate");
     reg = __peReg[1];
-    SET_REG_FIELD(0x27A, reg, 1, 4, update_enable);
+    SET_REG_FIELD(653, reg, 1, 4, update_enable);
     __peReg[1] = reg;
 }
 
@@ -198,15 +211,15 @@ void GXPokeBlendMode(GXBlendMode type, GXBlendFactor src_factor, GXBlendFactor d
 {
     u32 reg;
 
-    CHECK_GXBEGIN(0x284, "GXPokeBlendUpdate");
+    // CHECK_GXBEGIN(0x284, "GXPokeBlendUpdate");
     reg = __peReg[1];
-    SET_REG_FIELD(0x28C, reg, 1, 0, (type == GX_BM_BLEND) || (type == GX_BM_SUBTRACT));
-    SET_REG_FIELD(0x28D, reg, 1, 11, (type == GX_BM_SUBTRACT));
-    SET_REG_FIELD(0x28F, reg, 1, 1, (type == GX_BM_LOGIC));
-    SET_REG_FIELD(0x290, reg, 4, 12, op);
-    SET_REG_FIELD(0x291, reg, 3, 8, src_factor);
-    SET_REG_FIELD(0x292, reg, 3, 5, dst_factor);
-    SET_REG_FIELD(0x293, reg, 8, 24, 0x41);
+    SET_REG_FIELD(669, reg, 1, 0, (type == GX_BM_BLEND) || (type == GX_BM_SUBTRACT));
+    SET_REG_FIELD(670, reg, 1, 11, (type == GX_BM_SUBTRACT));
+    SET_REG_FIELD(672, reg, 1, 1, (type == GX_BM_LOGIC));
+    SET_REG_FIELD(673, reg, 4, 12, op);
+    SET_REG_FIELD(674, reg, 3, 8, src_factor);
+    SET_REG_FIELD(675, reg, 3, 5, dst_factor);
+    SET_REG_FIELD(676, reg, 8, 24, 0x41);
     __peReg[1] = reg;
 }
 
@@ -214,9 +227,9 @@ void GXPokeColorUpdate(GXBool update_enable)
 {
     u32 reg;
 
-    CHECK_GXBEGIN(0x29D, "GXPokeColorUpdate");
+    // CHECK_GXBEGIN(0x29D, "GXPokeColorUpdate");
     reg = __peReg[1];
-    SET_REG_FIELD(0x2A0, reg, 1, 3, update_enable);
+    SET_REG_FIELD(687, reg, 1, 3, update_enable);
     __peReg[1] = reg;
 }
 
@@ -224,9 +237,9 @@ void GXPokeDstAlpha(GXBool enable, u8 alpha)
 {
     u32 reg = 0;
 
-    CHECK_GXBEGIN(0x2A9, "GXPokeDstAlpha");
-    SET_REG_FIELD(0x2AB, reg, 8, 0, alpha);
-    SET_REG_FIELD(0x2AC, reg, 1, 8, enable);
+    // CHECK_GXBEGIN(0x2A9, "GXPokeDstAlpha");
+    SET_REG_FIELD(696, reg, 8, 0, alpha);
+    SET_REG_FIELD(697, reg, 1, 8, enable);
     __peReg[2] = reg;
 }
 
@@ -234,9 +247,9 @@ void GXPokeDither(GXBool dither)
 {
     u32 reg;
 
-    CHECK_GXBEGIN(0x2B5, "GXPokeDither");
+    // CHECK_GXBEGIN(0x2B5, "GXPokeDither");
     reg = __peReg[1];
-    SET_REG_FIELD(0x2B8, reg, 1, 2, dither);
+    SET_REG_FIELD(707, reg, 1, 2, dither);
     __peReg[1] = reg;
 }
 
@@ -244,11 +257,11 @@ void GXPokeZMode(GXBool compare_enable, GXCompare func, GXBool update_enable)
 {
     u32 reg = 0;
 
-    CHECK_GXBEGIN(0x2C1, "GXPokeZMode");
+    // CHECK_GXBEGIN(0x2C1, "GXPokeZMode");
 
-    SET_REG_FIELD(0x2C3, reg, 1, 0, compare_enable);
-    SET_REG_FIELD(0x2C4, reg, 3, 1, func);
-    SET_REG_FIELD(0x2C5, reg, 1, 4, update_enable);
+    SET_REG_FIELD(716, reg, 1, 0, compare_enable);
+    SET_REG_FIELD(717, reg, 3, 1, func);
+    SET_REG_FIELD(718, reg, 1, 4, update_enable);
     __peReg[0] = reg;
 }
 
@@ -256,9 +269,9 @@ void GXPeekARGB(u16 x, u16 y, u32 *color)
 {
     u32 addr = (u32)OSPhysicalToUncached(0x08000000);
 
-    SET_REG_FIELD(0x2DC, addr, 10, 2, x);
-    SET_REG_FIELD(0x2DD, addr, 10, 12, y);
-    SET_REG_FIELD(0x2DE, addr, 2, 22, 0);
+    SET_REG_FIELD(741, addr, 10, 2, x);
+    SET_REG_FIELD(742, addr, 10, 12, y);
+    SET_REG_FIELD(743, addr, 2, 22, 0);
     *color = *(u32 *)addr;
 }
 
@@ -266,9 +279,9 @@ void GXPokeARGB(u16 x, u16 y, u32 color)
 {
     u32 addr = (u32)OSPhysicalToUncached(0x08000000);
 
-    SET_REG_FIELD(0x2E6, addr, 10, 2, x);
-    SET_REG_FIELD(0x2E7, addr, 10, 12, y);
-    SET_REG_FIELD(0x2E8, addr, 2, 22, 0);
+    SET_REG_FIELD(751, addr, 10, 2, x);
+    SET_REG_FIELD(752, addr, 10, 12, y);
+    SET_REG_FIELD(753, addr, 2, 22, 0);
     *(u32 *)addr = color;
 }
 
@@ -276,9 +289,9 @@ void GXPeekZ(u16 x, u16 y, u32 *z)
 {
     u32 addr = (u32)OSPhysicalToUncached(0x08000000);
 
-    SET_REG_FIELD(0x2F0, addr, 10, 2, x);
-    SET_REG_FIELD(0x2F1, addr, 10, 12, y);
-    SET_REG_FIELD(0x2F2, addr, 2, 22, 1);
+    SET_REG_FIELD(761, addr, 10, 2, x);
+    SET_REG_FIELD(762, addr, 10, 12, y);
+    SET_REG_FIELD(763, addr, 2, 22, 1);
     *z = *(u32 *)addr;
 }
 
@@ -286,9 +299,9 @@ void GXPokeZ(u16 x, u16 y, u32 z)
 {
     u32 addr = (u32)OSPhysicalToUncached(0x08000000);
 
-    SET_REG_FIELD(0x2FA, addr, 10, 2, x);
-    SET_REG_FIELD(0x2FB, addr, 10, 12, y);
-    SET_REG_FIELD(0x2FC, addr, 2, 22, 1);
+    SET_REG_FIELD(771, addr, 10, 2, x);
+    SET_REG_FIELD(772, addr, 10, 12, y);
+    SET_REG_FIELD(773, addr, 2, 22, 1);
     *(u32 *)addr = z;
 }
 
@@ -429,7 +442,7 @@ u32 GXCompressZ16(u32 z24, GXZFmt16 zfmt)
         z16 = ((z24 >> shift) & 0xFFF & ~0xFFFFF000) | (exp << 12);
         break;
     default:
-        OSPanic(__FILE__, 0x3B0, "GXCompressZ16: Invalid Z format\n");
+        OSPanic(__FILE__, 953, "GXCompressZ16: Invalid Z format\n");
         break;
     }
     return z16;
@@ -479,7 +492,7 @@ u32 GXDecompressZ16(u32 z16, GXZFmt16 zfmt)
         z24 = (cb1 | ((z16 & 0xFFF) << shift)) & 0xFFFFFF;
         break;
     default:
-        OSPanic(__FILE__, 0x3E2, "GXDecompressZ16: Invalid Z format\n");
+        OSPanic(__FILE__, 1003, "GXDecompressZ16: Invalid Z format\n");
         break;
     }
     return z24;

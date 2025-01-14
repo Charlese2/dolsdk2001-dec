@@ -212,7 +212,7 @@ static u32 __GXGetNumXfbLines(u32 efbHt, u32 iScale) {
     u32 realHt;
     u32 iScaleD;
 
-    count = (efbHt - 1) * 256;
+    count = (efbHt - 1) * 0x100;
     realHt = (count / iScale) + 1;
     iScaleD = iScale;
 
@@ -293,7 +293,7 @@ u32 GXSetDispCopyYScale(f32 vscale)
     GX_WRITE_RAS_REG(reg);
     gx->bpSentNot = GX_FALSE;
     SET_REG_FIELD(1517, gx->cpDisp, 1, 10, enable);
-    ht = GET_REG_FIELD(gx->cpDispSize, 10, 10) + 1;
+    ht = (u32)GET_REG_FIELD(gx->cpDispSize, 10, 10) + 1;
     return __GXGetNumXfbLines(ht, iScale);
 }
 

@@ -179,6 +179,8 @@ void __GXSetGenMode(void);
 
 /* GXInit.c */
 
+void __GXInitGX(void);
+
 struct __GXData_struct {
     // total size: 0x4F4
     unsigned short vNumNot; // offset 0x0, size 0x2
@@ -290,6 +292,7 @@ void __GXSetRange(float nearz, float fgSideX);
 void __GetImageTileCount(GXTexFmt fmt, u16 wd, u16 ht, u32 *rowTiles, u32 *colTiles, u32 *cmpTiles);
 void __GXSetSUTexRegs(void);
 void __GXGetSUTexSize(GXTexCoordID coord, u16 *width, u16 *height);
+void __GXSetTmemConfig(u32 config);
 
 /* GXTransform.c */
 
@@ -419,7 +422,9 @@ typedef enum {
     GXWARN_INV_MTX_VAL = 110,
     GXWARN_ADDR_UNINIT = 111,
     GXWARN_REG_UNINIT = 112,
-    GXWARN_MAX = 113,
+    GXWARN_113,
+    GXWARN_114,
+    GXWARN_MAX = 115,
 } GXWarnID;
 
 #define __GX_WARN(id) (__gxVerif->cb(GX_WARN_SEVERE, (id), __gxvWarnings[(id)]))
@@ -454,7 +459,8 @@ struct __GXVerifyData {
 };
 
 extern struct __GXVerifyData *__gxVerif;
-extern char *__gxvWarnings[113];
+extern char *__gxvWarnings[115];
+extern GXWarningLevel __gxvWarnLev[115];
 extern char __gxvDummyStr[256];
 
 void __GXVerifyGlobal(void);
