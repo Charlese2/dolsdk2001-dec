@@ -32,7 +32,7 @@ Currently this repository supports building the following libraries:
 | fileCache    | :x: |
 | G2D          | :x: |
 | gd           | :x: |
-| gx           | :x: |
+| gx           | :heavy_check_mark: |
 | hio          | :x: |
 | mcc          | :x: |
 | mix          | :x: |
