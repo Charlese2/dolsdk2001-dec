@@ -3,8 +3,6 @@
 
 #include <dolphin/hw_regs.h>
 
-#define SI_ERROR_BUSY (1 << 7)
-
 #define CHAN_NONE -1
 
 #define SI_MAX_CHAN 4

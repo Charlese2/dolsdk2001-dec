@@ -31,7 +31,7 @@ Currently this repository supports building the following libraries:
 | exi          | :heavy_check_mark: |
 | fileCache    | :x: |
 | G2D          | :x: |
-| gd           | :x: |
+| gd           | :warning: |
 | gx           | :heavy_check_mark: |
 | hio          | :x: |
 | mcc          | :x: |
@@ -40,7 +40,7 @@ Currently this repository supports building the following libraries:
 | odemustubs   | :x: |
 | odenotstub   | :x: |
 | os           | :x: |
-| pad          | :x: |
+| pad          | :heavy_check_mark: |
 | perf         | :x: |
 | seq          | :x: |
 | si           | :heavy_check_mark: |

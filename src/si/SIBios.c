@@ -1,5 +1,6 @@
 #include <dolphin.h>
 #include <dolphin/os.h>
+#include <dolphin/si.h>
 #include "__os.h"
 
 static SIControl Si = {
@@ -105,7 +106,7 @@ static void SITransferNext(long chan) {
         packet = &Packet[chan];
 
         if (packet->chan != -1) {
-            if (packet->fire <= OSGetTime()) {
+            if (packet->fire <= __OSGetSystemTime()) {
                 if (__SITransfer(packet->chan, packet->output, packet->outputBytes, packet->input, packet->inputBytes, packet->callback) != 0) {
                     OSCancelAlarm(&Alarm[chan]);
                     packet->chan = -1;
