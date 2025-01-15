@@ -422,8 +422,8 @@ typedef enum {
     GXWARN_INV_MTX_VAL = 110,
     GXWARN_ADDR_UNINIT = 111,
     GXWARN_REG_UNINIT = 112,
-    GXWARN_113,
-    GXWARN_114,
+    GXWARN_DL_INV_CMD = 113,
+    GXWARN_DL_NESTED = 114,
     GXWARN_MAX = 115,
 } GXWarnID;
 
@@ -440,6 +440,24 @@ do { \
     sprintf(__gxvDummyStr, __gxvWarnings[(id)], __VA_ARGS__); \
     __gxVerif->cb(level, (id), __gxvDummyStr); \
 } while (0)
+
+#define __GX_WARN3(id) (__gxVerif->cb(__gxvWarnLev[(id)], (id), __gxvWarnings[(id)]))
+#define __GX_WARN3F(id, ...) \
+do { \
+    sprintf(__gxvDummyStr, __gxvWarnings[(id)], __VA_ARGS__); \
+    __gxVerif->cb(__gxvWarnLev[(id)], (u32)(id), __gxvDummyStr); \
+} while (0)
+
+#define __GX_WARN3_CHECK(id) \
+do { \
+    if (__gxVerif->verifyLevel >= __gxvWarnLev[(u32)(id)]) \
+        __GX_WARN3(id); \
+} while(0)
+#define __GX_WARN3F_CHECK(id, ...) \
+do { \
+    if (__gxVerif->verifyLevel >= __gxvWarnLev[(id)]) \
+        __GX_WARN3F(id, __VA_ARGS__); \
+} while(0)
 
 struct __GXVerifyData {
     // total size: 0x13F8

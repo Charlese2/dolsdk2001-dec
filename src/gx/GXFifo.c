@@ -6,6 +6,9 @@
 
 #include "__gx.h"
 
+struct __GXFifoObj *CPUFifo = NULL;
+struct __GXFifoObj *GPFifo = NULL;
+
 static OSThread *__GXCurrentThread;
 static GXBool CPGPLinked;
 static BOOL GXOverflowSuspendInProgress;
@@ -15,8 +18,6 @@ static u32 __GXOverflowCount;
 static int IsWGPipeRedirected;
 #endif
 
-struct __GXFifoObj *CPUFifo;
-struct __GXFifoObj *GPFifo;
 void *__GXCurrentBP;
 
 static void __GXFifoReadEnable(void);
