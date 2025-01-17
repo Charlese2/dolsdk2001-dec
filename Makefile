@@ -177,6 +177,10 @@ build/debug/src/card/CARDRename.o: CHARFLAGS := -char signed
 build/release/src/card/CARDRename.o: CHARFLAGS := -char signed
 build/debug/src/card/CARDOpen.o: CHARFLAGS := -char signed
 build/release/src/card/CARDOpen.o: CHARFLAGS := -char signed
+build/debug/src/dvd/dvdfs.o: CHARFLAGS := -char signed
+build/release/src/dvd/dvdfs.o: CHARFLAGS := -char signed
+build/debug/src/dvd/fstload.o: CHARFLAGS := -char signed
+build/release/src/dvd/fstload.o: CHARFLAGS := -char signed
 
 %/stub.o: CFLAGS += -warn off
 
@@ -198,7 +202,7 @@ TARGET_LIBS_DEBUG := $(addprefix baserom/,$(addsuffix .a,$(TARGET_LIBS_DEBUG)))
 
 default: all
 
-all: $(DTK) amcnotstub.a amcnotstubD.a amcstubs.a amcstubsD.a axart.a axartD.a card.a cardD.a exi.a exiD.a gx.a gxD.a pad.a padD.a si.a siD.a
+all: $(DTK) amcnotstub.a amcnotstubD.a amcstubs.a amcstubsD.a axart.a axartD.a card.a cardD.a dvd.a dvdD.a exi.a exiD.a gx.a gxD.a pad.a padD.a si.a siD.a
 
 verify: build/release/test.bin build/debug/test.bin build/verify.sha1
 	@sha1sum -c build/verify.sha1
@@ -267,6 +271,10 @@ axartD.a : $(addprefix $(BUILD_DIR)/debug/,$(axart_c_files:.c=.o))
 card_c_files := $(wildcard src/card/*.c)
 card.a  : $(addprefix $(BUILD_DIR)/release/,$(card_c_files:.c=.o))
 cardD.a  : $(addprefix $(BUILD_DIR)/debug/,$(card_c_files:.c=.o))
+
+dvd_c_files := $(wildcard src/dvd/*.c)
+dvd.a  : $(addprefix $(BUILD_DIR)/release/,$(dvd_c_files:.c=.o))
+dvdD.a  : $(addprefix $(BUILD_DIR)/debug/,$(dvd_c_files:.c=.o))
 
 exi_c_files := $(wildcard src/exi/*.c)
 exi.a  : $(addprefix $(BUILD_DIR)/release/,$(exi_c_files:.c=.o))
