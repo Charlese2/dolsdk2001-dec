@@ -3,6 +3,7 @@
 # This script was written by DeepSeek and it makes it so
 # objdiff-cli can generate a report by creating dummy .o files
 # for everything not yet built by make.
+# Yes, it takes a while.
 
 # Function to create a minimal valid .o file using mwcceppc.exe via wibo
 create_empty_o_file() {
@@ -53,3 +54,5 @@ run_objdiff() {
 
 # Run the function
 run_objdiff
+
+objdiff-cli-linux-x86_64 report generate --format json-pretty | less
