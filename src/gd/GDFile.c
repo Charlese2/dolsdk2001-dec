@@ -1,7 +1,6 @@
 #include <dolphin/gd/GDFile.h>
 #include <dolphin/os.h>
 
-
 typedef struct _GDFileHeader {
   u32 versionNumber;
   u32 numDLs;

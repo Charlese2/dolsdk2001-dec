@@ -1,11 +1,11 @@
 #include <dolphin/gd/GDLight.h>
+#include <dolphin/gd/GDBase.h>
 #include <math.h>
-#include "__gd.h"
 
 void GDSetLightAttn(GXLightID light, float a0, float a1, float a2, float k0,
                     float k1, float k2)
 {
-	GDWriteXFCmdHdr(__GDLightID2Offset(light) + 0x604, 6);
+	GDWriteXFCmdHdr(__GDLightID2Offset(light) + XF_LIGHT_ATTN_ID, 6);
 	GDWrite_f32(a0);
 	GDWrite_f32(a1);
 	GDWrite_f32(a2);
@@ -73,7 +73,7 @@ void GDSetLightSpot(GXLightID light, float cutoff, GXSpotFn spot_func)
     a2 = 0.0f;
 		break;
   }
-  GDWriteXFCmdHdr(__GDLightID2Offset(light) + 0x604,3);
+  GDWriteXFCmdHdr(__GDLightID2Offset(light) + XF_LIGHT_ATTN_ID,3);
   GDWrite_f32(a0);
   GDWrite_f32(a1);
   GDWrite_f32(a2);
@@ -119,7 +119,7 @@ void GDSetLightDistAttn(GXLightID light, float ref_dist, float ref_br,
 			break;
 	}
 
-  GDWriteXFCmdHdr(__GDLightID2Offset(light) + 0x607,3);
+  GDWriteXFCmdHdr(__GDLightID2Offset(light) + XF_LIGHT_DISTATTN_ID, 3);
   GDWrite_f32(k0);
   GDWrite_f32(k1);
   GDWrite_f32(k2);
@@ -127,13 +127,13 @@ void GDSetLightDistAttn(GXLightID light, float ref_dist, float ref_br,
 
 void GDSetLightColor(GXLightID light, GXColor* color)
 {
-	GDWriteXFCmd(__GDLightID2Offset(light) + 0x603,
+	GDWriteXFCmd(__GDLightID2Offset(light) + XF_LIGHT_COLOR_ID,
 	             color->r << 24 | color->g << 16 | color->b << 8 | color->a);
 }
 
 void GDSetLightPos(GXLightID light, float x, float y, float z)
 {
-	GDWriteXFCmdHdr(__GDLightID2Offset(light) + 0x60a, 3);
+	GDWriteXFCmdHdr(__GDLightID2Offset(light) + XF_LIGHT_POS_ID, 3);
 	GDWrite_f32(x);
 	GDWrite_f32(y);
 	GDWrite_f32(z);
@@ -141,7 +141,7 @@ void GDSetLightPos(GXLightID light, float x, float y, float z)
 
 void GDSetLightDir(GXLightID light, float nx, float ny, float nz)
 {
-	GDWriteXFCmdHdr(__GDLightID2Offset(light) + 0x60d, 3);
+	GDWriteXFCmdHdr(__GDLightID2Offset(light) + XF_LIGHT_DIR_ID, 3);
 	GDWrite_f32(nx);
 	GDWrite_f32(ny);
 	GDWrite_f32(nz);
@@ -157,7 +157,7 @@ void GDSetSpecularDirHA(GXLightID light, float nx, float ny, float nz,
 	px = 1048576.0f * -nx;
   py = 1048576.0f * -ny;
   pz = 1048576.0f * -nz;
-  GDWriteXFCmdHdr(__GDLightID2Offset(light) + 0x60a,6);
+  GDWriteXFCmdHdr(__GDLightID2Offset(light) + XF_LIGHT_SPEC_DIR_ID,6);
   GDWrite_f32(px);
   GDWrite_f32(py);
   GDWrite_f32(pz);
@@ -187,7 +187,7 @@ void GDSetSpecularDir(GXLightID light, float nx, float ny, float nz)
   py = 1048576.0f * -ny;
   pz = 1048576.0f * -nz;
 
-  GDWriteXFCmdHdr(__GDLightID2Offset(light) + 0x60a, 6);
+  GDWriteXFCmdHdr(__GDLightID2Offset(light) + XF_LIGHT_SPEC_DIR_ID, 6);
   GDWrite_f32(px);
   GDWrite_f32(py);
   GDWrite_f32(pz);
@@ -198,18 +198,18 @@ void GDSetSpecularDir(GXLightID light, float nx, float ny, float nz)
 
 void GDLoadLightObjIndx(u32 lt_obj_indx, GXLightID light)
 {
-  GDWriteXFIndxDCmd(__GDLightID2Offset(light) + 0x600, 0x10, lt_obj_indx);
+  GDWriteXFIndxDCmd(__GDLightID2Offset(light) + XF_LIGHT_ID, 0x10, lt_obj_indx);
 }
 
 void GDSetChanAmbColor(GXChannelID chan, GXColor* color)
 {
-  GDWriteXFCmd((chan & 1) + 0x100a,
+  GDWriteXFCmd((chan & 1) + XF_REG_AMBIENT0_ID,
 	             color->r << 24 | color->g << 16 | color->b << 8 | color->a);
 }
 
 void GDSetChanMatColor(GXChannelID chan, GXColor* color)
 {
-	GDWriteXFCmd((chan & 1) + 0x100c,
+	GDWriteXFCmd((chan & 1) + XF_REG_MATERIAL0_ID,
 	             color->r << 24 | color->g << 16 | color->b << 8 | color->a);
 }
 
@@ -219,16 +219,11 @@ void GDSetChanCtrl(GXChannelID chan, u8 enable, GXColorSrc amb_src,
 {
 	u32 reg;
 
-	reg = mat_src
-		| enable << 1
-		| (light_mask & 0xf) << 2
-		| amb_src << 6
-		| (attn_fn == 0 ? 0 : diff_fn) << 7
-		| (attn_fn != 2) << 9
-		| (attn_fn != 0) << 10
-		| (light_mask & 0xf0) << 7;
-	GDWriteXFCmd((chan & 3) + 0x100e, reg);
+  reg = XF_REG_CHAN_CTRL(mat_src, enable, light_mask & 0xF,
+    amb_src, attn_fn == GX_AF_SPEC ? GX_DF_NONE : diff_fn,
+    attn_fn != GX_AF_NONE, attn_fn != GX_AF_SPEC, (light_mask >> 4) & 0xF);
+	GDWriteXFCmd((chan & 3) + XF_REG_COLOR0CNTRL_ID, reg);
 	if ((chan == 4) || (chan == 5)) {
-		GDWriteXFCmd(chan + 0x100c, reg);
+		GDWriteXFCmd(chan + XF_REG_MATERIAL0_ID, reg);
 	}
 }
