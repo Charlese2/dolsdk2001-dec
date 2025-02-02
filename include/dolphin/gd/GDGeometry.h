@@ -126,44 +126,44 @@ extern "C" {
 
 #define XF_REG_INVTXSPEC(ncols, nnorms, ntexs) \
     ( \
-        (ncols) << 0 | \
-        (nnorms) << 2 | \
-        (ntexs) << 4 \
+        ((u32)(ncols)) << 0 | \
+        ((u32)(nnorms)) << 2 | \
+        ((u32)(ntexs)) << 4 \
     )
 
 #define XF_REG_TEX(proj, form, tgType, row, embossRow, embossLit) \
     ( \
-        (proj) << 1 | \
-        (form) << 2 | \
-        (tgType) << 4 | \
-        (row) << 7 | \
-        (embossRow) << 12 | \
-        (embossLit) << 15 \
+        ((u32)(proj)) << 1 | \
+        ((u32)(form)) << 2 | \
+        ((u32)(tgType)) << 4 | \
+        ((u32)(row)) << 7 | \
+        ((u32)(embossRow)) << 12 | \
+        ((u32)(embossLit)) << 15 \
     )
 
 #define XF_REG_DUALTEX(mtx, normalize) \
     ( \
-        (mtx) << 0 | \
-        (normalize) << 8 \
+        ((u32)(mtx)) << 0 | \
+        ((u32)(normalize)) << 8 \
     )
 
 #define BP_GEN_MODE(nTexGens, nChans, nTevs, p4, nInds) \
     ( \
-        (u32)(nTexGens) << 0 | \
-        (u32)(nChans) << 4 | \
-        (u32)(nTevs) << 10 | \
-        (u32)(p4) << 14 | \
-        (u32)(nInds) << 16 \
+        ((u32)(nTexGens)) << 0 | \
+        ((u32)(nChans)) << 4 | \
+        ((u32)(nTevs)) << 10 | \
+        ((u32)(p4)) << 14 | \
+        ((u32)(nInds)) << 16 \
     )
 
 #define BP_LP_SIZE(lineWidth, pointSize, lineOffset, pointOffset, lineHalfAspect, p5) \
     ( \
-        (u32)(lineWidth) << 0 | \
-        (u32)(pointSize) << 8 | \
-        (u32)(lineOffset) << 16 | \
-        (u32)(pointOffset) << 19 | \
-        (u32)(lineHalfAspect) << 22 | \
-        (u32)(p5) << 24 \
+        ((u32)(lineWidth)) << 0 | \
+        ((u32)(pointSize)) << 8 | \
+        ((u32)(lineOffset)) << 16 | \
+        ((u32)(pointOffset)) << 19 | \
+        ((u32)(lineHalfAspect)) << 22 | \
+        ((u32)(p5)) << 24 \
     )
 
 void GDSetVtxDescv(const GXVtxDescList* attrPtr);
