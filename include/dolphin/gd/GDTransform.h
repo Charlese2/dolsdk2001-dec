@@ -9,6 +9,29 @@
 extern "C" {
 #endif
 
+#define CP_MTX_REG_A_ID 0x30
+#define CP_MTX_REG_B_ID 0x40
+
+#define XF_REG_MATRIXINDEX0_ID 0x1018
+#define XF_REG_MATRIXINDEX1_ID 0x1019
+
+#define CP_MTX_REG_A(pn, t0, t1, t2, t3) \
+    ( \
+        (u32)(pn) << 0 | \
+        (u32)(t0) << 6 | \
+        (u32)(t1) << 12 | \
+        (u32)(t2) << 18 | \
+        (u32)(t3) << 24 \
+    )
+
+#define CP_MTX_REG_B(t4, t5, t6, t7) \
+    ( \
+        (u32)(t4) << 0 | \
+        (u32)(t5) << 6 | \
+        (u32)(t6) << 12 | \
+        (u32)(t7) << 18 \
+    )
+
 void GDLoadPosMtxImm(MtxPtr mtx, u32 id);
 void GDLoadPosMtxIndx(u16 mtx_indx, u32 id);
 void GDLoadNrmMtxImm(MtxPtr mtx, u32 id);

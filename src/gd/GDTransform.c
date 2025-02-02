@@ -1,7 +1,7 @@
 #include <dolphin/gd/GDTransform.h>
+#include <dolphin/gd/GDBase.h>
 #include <dolphin/os.h>
 #include <macros.h>
-#include "__gd.h"
 
 void GDLoadPosMtxImm(MtxPtr mtx, u32 id)
 {
@@ -64,17 +64,18 @@ void GDLoadTexMtxImm(MtxPtr mtx, u32 id, GXTexMtxType type)
 	u8 count;
 
 	if (id >= 0x40) {
-		ASSERTMSGLINE(172, type == 0,
+		ASSERTMSGLINE(172, type == GX_MTX3x4,
 			"GDLoadTexMtxImm: invalid matrix type");
 
 		addr = ((id - 0x40U & 0xffffffff) << 2) + 0x500;
 		count = 12;
 	} else {
 		addr = 4 * id;
-		count = type == 1 ? 8 : 12;
+		count = type == GX_MTX2x4 ? 8 : 12;
 	}
 
-	GDWriteXFCmdHdr(addr,count);
+	GDWriteXFCmdHdr(addr, count);
+
 	GDWrite_f32(mtx[0][0]);
 	GDWrite_f32(mtx[0][1]);
 	GDWrite_f32(mtx[0][2]);
@@ -83,7 +84,8 @@ void GDLoadTexMtxImm(MtxPtr mtx, u32 id, GXTexMtxType type)
 	GDWrite_f32(mtx[1][1]);
 	GDWrite_f32(mtx[1][2]);
 	GDWrite_f32(mtx[1][3]);
-	if (type == 0) {
+
+	if (type == GX_MTX3x4) {
 		GDWrite_f32(mtx[2][0]);
 		GDWrite_f32(mtx[2][1]);
 		GDWrite_f32(mtx[2][2]);
@@ -97,14 +99,14 @@ void GDLoadTexMtxIndx(u16 mtx_indx, u32 id, GXTexMtxType type)
 	u8 count;
 
 	if (id >= 0x40) {
-		ASSERTMSGLINE(221, type == 0,
+		ASSERTMSGLINE(221, type == GX_MTX3x4,
 			"GDLoadTexMtxIndx: invalid matrix type");
 
 		addr = ((id - 0x40U & 0xffffffff) << 2) + 0x500;
 		count = 12;
 	} else {
 		addr = 4 * id;
-		count = type == 1 ? 8 : 12;
+		count = type == GX_MTX2x4 ? 8 : 12;
 	}
 
   GDWriteXFIndxCCmd(addr, count, mtx_indx);
@@ -116,20 +118,12 @@ void GDSetCurrentMtx(u32 pn, u32 t0, u32 t1, u32 t2, u32 t3, u32 t4, u32 t5,
 	u32 regA;
 	u32 regB;
 
-	regA = pn << 0
-		| t0 << 6
-		| t1 << 12
-		| t2 << 18
-		| t3 << 24;
+	regA = CP_MTX_REG_A(pn, t0, t1, t2, t3);
+	regB = CP_MTX_REG_B(t4, t5, t6, t7);
 
-	regB = t4 << 0
-	  | t5 << 6
-	  | t6 << 12
-	  | t7 << 18;
-
-	GDWriteCPCmd(0x30, regA);
-	GDWriteCPCmd(0x40, regB);
-	GDWriteXFCmdHdr(0x1018, 2);
+	GDWriteCPCmd(CP_MTX_REG_A_ID, regA);
+	GDWriteCPCmd(CP_MTX_REG_B_ID, regB);
+	GDWriteXFCmdHdr(XF_REG_MATRIXINDEX0_ID, 2);
 	GDWrite_u32(regA);
 	GDWrite_u32(regB);
 }

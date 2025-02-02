@@ -1,10 +1,10 @@
 #include <dolphin/gd/GDPixel.h>
+#include <dolphin/gd/GDBase.h>
 #include <dolphin/os.h>
 #include <macros.h>
-#include "__gd.h"
 
 void GDSetFog(GXFogType type, float startz, float endz,
-		          float nearz, float farz, GXColor * color)
+		          float nearz, float farz, GXColor color)
 {
   float A;
   float B;
@@ -48,11 +48,11 @@ void GDSetFog(GXFogType type, float startz, float endz,
 	a_hex = *(u32*)&A_f;
 	c_hex = *(u32*)&C;
 
-  GDWriteBPCmd(a_hex >> 12 | 0xee000000);
-  GDWriteBPCmd(b_m | 0xef000000);
-  GDWriteBPCmd(b_expn | 0xf0000000);
-  GDWriteBPCmd(c_hex >> 12 | type << 21 | 0xf1000000);
-  GDWriteBPCmd(color->b | color->g << 8 | color->r << 16 | 0xf2000000);
+  GDWriteBPCmd(BP_FOG_UNK0(a_hex >> 12, 0xee));
+  GDWriteBPCmd(BP_FOG_UNK1(b_m, 0xef));
+  GDWriteBPCmd(BP_FOG_UNK2(b_expn, 0xf0));
+  GDWriteBPCmd(BP_FOG_UNK3(c_hex >> 12, 0, type, 0xf1));
+  GDWriteBPCmd(BP_FOG_COLOR(color.r, color.g, color.b, 0xf2));
 }
 
 void GDSetBlendMode(GXBlendMode type, GXBlendFactor src_factor,
@@ -60,15 +60,18 @@ void GDSetBlendMode(GXBlendMode type, GXBlendFactor src_factor,
 {
 	GDWriteBPCmd(0xfe001fe3);
 	// clang-format off
-	GDWriteBPCmd(
-		((type == GX_BM_BLEND) || (type == GX_BM_SUBTRACT))
-		| (type == GX_BM_LOGIC) << 1
-		| dst_factor << 5
-		| src_factor << 8
-		| (type == GX_BM_SUBTRACT) << 11
-		| logic_op << 12
-		| 0x41000000
-	);
+	GDWriteBPCmd(BP_BLEND_MODE(
+		type == GX_BM_BLEND || type == GX_BM_SUBTRACT,
+		type == GX_BM_LOGIC,
+		0,
+		0,
+		0,
+		dst_factor,
+		src_factor,
+		type == GX_BM_SUBTRACT,
+		logic_op,
+		0x41
+	));
 	// clang-format on
 }
 
@@ -78,46 +81,37 @@ void GDSetBlendModeEtc(GXBlendMode type, GXBlendFactor src_factor,
                        u8 dither_enable)
 {
 	// clang-format off
-	GDWriteBPCmd(
-		((type == GX_BM_BLEND) || (type == GX_BM_SUBTRACT))
-		| (type == GX_BM_LOGIC) << 1
-		| dither_enable << 2
-		| color_update_enable << 3
-		| alpha_update_enable << 4
-		| dst_factor << 5
-		| src_factor << 8
-		| (type == GX_BM_SUBTRACT) << 11
-		| logic_op << 12
-		| 0x41000000
-	);
+	GDWriteBPCmd(BP_BLEND_MODE(
+		type == GX_BM_BLEND || type == GX_BM_SUBTRACT,
+		type == GX_BM_LOGIC,
+		dither_enable,
+		color_update_enable,
+		alpha_update_enable,
+		dst_factor,
+		src_factor,
+		type == GX_BM_SUBTRACT,
+		logic_op,
+		0x41
+	));
 	// clang-format on
 }
 
 void GDSetZMode(u8 compare_enable, GXCompare func, u8 update_enable)
 {
 	// clang-format off
-	GDWriteBPCmd(
-		compare_enable
-		| func << 1
-		| update_enable << 4
-		| 1u << 30
-	);
+	GDWriteBPCmd(BP_Z_MODE(compare_enable, func, update_enable, 0x40));
 	// clang-format on
 }
 
 void GDSetDstAlpha(u8 enable, u8 alpha)
 {
 	// clang-format off
-	GDWriteBPCmd(
-		alpha
-		| enable << 8
-		| 0x42000000
-	);
+	GDWriteBPCmd(BP_DST_ALPHA(alpha, enable, 0x42));
 	// clang-format on
 }
 
 void GDSetDrawSync(u16 token)
 {
-	GDWriteBPCmd(token | 0x48000000);
-	GDWriteBPCmd(token | 0x47000000);
+	GDWriteBPCmd(BP_TOKEN(token, 0x48));
+	GDWriteBPCmd(BP_TOKEN(token, 0x47));
 }

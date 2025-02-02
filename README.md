@@ -31,7 +31,7 @@ Currently this repository supports building the following libraries:
 | exi          | :heavy_check_mark: |
 | fileCache    | :x: |
 | G2D          | :x: |
-| gd           | :warning: |
+| gd           | :heavy_check_mark: |
 | gx           | :heavy_check_mark: |
 | hio          | :x: |
 | mcc          | :x: |
