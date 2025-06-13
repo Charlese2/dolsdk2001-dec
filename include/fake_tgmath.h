@@ -1,5 +1,6 @@
 f32 acosf(f32);
 f32 sinf(f32);
+f32 cosf(f32);
 
 #pragma cplusplus on
 
