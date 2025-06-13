@@ -182,6 +182,11 @@ build/release/src/dvd/dvdfs.o: CHARFLAGS := -char signed
 build/debug/src/dvd/fstload.o: CHARFLAGS := -char signed
 build/release/src/dvd/fstload.o: CHARFLAGS := -char signed
 
+build/debug/src/mtx/mtx.o: CHARFLAGS := -char signed
+build/release/src/mtx/mtx.o: CHARFLAGS := -char signed
+build/debug/src/mtx/mtx44.o: CHARFLAGS := -char signed
+build/release/src/mtx/mtx44.o: CHARFLAGS := -char signed
+
 %/stub.o: CFLAGS += -warn off
 
 CFLAGS = $(CHARFLAGS) -nodefaults -proc gekko -fp hard -Cpp_exceptions off -enum int -warn pragmas -requireprotos -pragma 'cats off'
@@ -202,7 +207,7 @@ TARGET_LIBS_DEBUG := $(addprefix baserom/,$(addsuffix .a,$(TARGET_LIBS_DEBUG)))
 
 default: all
 
-all: $(DTK) amcnotstub.a amcnotstubD.a amcstubs.a amcstubsD.a axart.a axartD.a card.a cardD.a dvd.a dvdD.a exi.a exiD.a gd.a gdD.a gx.a gxD.a hio.a hioD.a pad.a padD.a si.a siD.a
+all: $(DTK) amcnotstub.a amcnotstubD.a amcstubs.a amcstubsD.a axart.a axartD.a card.a cardD.a dvd.a dvdD.a exi.a exiD.a gd.a gdD.a gx.a gxD.a hio.a hioD.a mtx.a mtxD.a pad.a padD.a si.a siD.a
 
 verify: build/release/test.bin build/debug/test.bin build/verify.sha1
 	@sha1sum -c build/verify.sha1
@@ -291,6 +296,10 @@ gxD.a : $(addprefix $(BUILD_DIR)/debug/,$(gx_c_files:.c=.o))
 hio_c_files := $(wildcard src/hio/*.c)
 hio.a : $(addprefix $(BUILD_DIR)/release/,$(hio_c_files:.c=.o))
 hioD.a : $(addprefix $(BUILD_DIR)/debug/,$(hio_c_files:.c=.o))
+
+mtx_c_files := $(wildcard src/mtx/*.c)
+mtx.a : $(addprefix $(BUILD_DIR)/release/,$(mtx_c_files:.c=.o))
+mtxD.a : $(addprefix $(BUILD_DIR)/debug/,$(mtx_c_files:.c=.o))
 
 pad_c_files := $(wildcard src/pad/*.c)
 pad.a  : $(addprefix $(BUILD_DIR)/release/,$(pad_c_files:.c=.o))
